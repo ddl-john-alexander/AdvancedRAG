@@ -28,8 +28,7 @@ strip_whitespace = True
 separators=["\n\n", "\n", ".", " ", ""]
 PINECONE_ENV="gcp-starter"
 
-
-def load_embedding_model()
+def load_embedding_model():
     model_kwargs = {'device': 'cpu'}
     encode_kwargs = {'normalize_embeddings': True}
     embedding_model_name = "BAAI/bge-small-en"
@@ -38,8 +37,9 @@ def load_embedding_model()
                                       model_kwargs=model_kwargs,
                                       encode_kwargs=encode_kwargs
                                      )
+    return embeddings
 
-def init_datasource()
+def init_datasource():
     datasource_name = "mrag-fin-docs-ja"
     conf = DominoPineconeConfiguration(datasource=datasource_name)
     # The pinecone API key should be provided when creating the Domino Data Source and persisted securely.
@@ -54,11 +54,8 @@ def init_datasource()
 
     # Previously created index
     index_name = "mrag-fin-docs"
-    index = pinecone.Index(index_name)
-    return index
-    
-
-
+    #index = pinecone.Index(index_name)
+    return index_name
 
 class MyHandler(FileSystemEventHandler):
     def on_created(self, event):
@@ -66,6 +63,16 @@ class MyHandler(FileSystemEventHandler):
             return
         filepath = event.src_path
         print(f"File {filepath} has been added.")
+        # Load an entire folder
+        loader = PyPDFLoader(filepath)
+        data = loader.load_and_split(RecursiveCharacterTextSplitter(
+        chunk_size=chunk_size, 
+        chunk_overlap=chunk_overlap,
+        strip_whitespace=strip_whitespace,
+        add_start_index = True,))
+        index_name = init_datasource()
+        embeddings = load_embedding_model()
+        docsearch = Pinecone.from_texts([d.page_content for d in data], embeddings.embed_query, index_name=index_name)
 
 def watch_directory(directory, index):
     event_handler = MyHandler()
@@ -78,15 +85,6 @@ def watch_directory(directory, index):
     except KeyboardInterrupt:
         observer.stop()
     observer.join()
-    
-    # Load an entire folder
-    loader = PyPDFDirectoryLoader("/mnt/code/data/")
-    data = loader.load_and_split(RecursiveCharacterTextSplitter(
-    chunk_size=chunk_size, 
-    chunk_overlap=chunk_overlap,
-    strip_whitespace=strip_whitespace,
-    add_start_index = True,))
-    docsearch = Pinecone.from_texts([d.page_content for d in data], embeddings.embed_query, index_name=index_name)
 
 if __name__ == "__main__":
     directory_to_watch = "/mnt/code/data"
