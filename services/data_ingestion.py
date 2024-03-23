@@ -70,8 +70,11 @@ class MyHandler(FileSystemEventHandler):
         chunk_overlap=chunk_overlap,
         strip_whitespace=strip_whitespace,
         add_start_index = True,))
+        
         index_name = init_datasource()
+        
         embeddings = load_embedding_model()
+        
         docsearch = Pinecone.from_texts([d.page_content for d in data], embeddings.embed_query, index_name=index_name)
 
 def watch_directory(directory, index):
