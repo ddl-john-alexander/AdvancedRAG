@@ -75,7 +75,7 @@ class MyHandler(FileSystemEventHandler):
         
         embeddings = load_embedding_model()
         
-        docsearch = Pinecone.from_texts([d.page_content for d in data], embeddings.embed_query, index_name=index_name)
+        docsearch = Pinecone.add_texts([d.page_content for d in data], embeddings.embed_query, index_name=index_name)
 
 def watch_directory(directory, index):
     event_handler = MyHandler()
