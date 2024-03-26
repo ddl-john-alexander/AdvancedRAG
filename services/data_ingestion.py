@@ -1,7 +1,7 @@
 from domino_data.vectordb import DominoPineconeConfiguration
 from langchain.document_loaders import PyPDFLoader, PyPDFDirectoryLoader
 from langchain.text_splitter import RecursiveCharacterTextSplitter
-from langchain.embeddings import HuggingFaceBgeEmbeddings
+from langchain_community.embeddings import MlflowEmbeddings
 from langchain.vectorstores import Pinecone
 
 import csv
@@ -22,21 +22,17 @@ client = get_deploy_client(os.environ['DOMINO_MLFLOW_DEPLOYMENTS'])
 
 texts = []
 metadata = []
-chunk_size=768
-chunk_overlap=0
+chunk_size=1000
+chunk_overlap=200
 strip_whitespace = True
 separators=["\n\n", "\n", ".", " ", ""]
 PINECONE_ENV="gcp-starter"
 
 def load_embedding_model():
-    model_kwargs = {'device': 'cpu'}
-    encode_kwargs = {'normalize_embeddings': True}
-    embedding_model_name = "BAAI/bge-small-en"
-    os.environ['SENTENCE_TRANSFORMERS_HOME'] = './model_cache/'
-    embeddings = HuggingFaceBgeEmbeddings(model_name=embedding_model_name,
-                                      model_kwargs=model_kwargs,
-                                      encode_kwargs=encode_kwargs
-                                     )
+    embeddings = MlflowEmbeddings(
+        target_uri=os.environ["DOMINO_MLFLOW_DEPLOYMENTS"],
+        endpoint="embedding-ada-002ja2",
+        )
     return embeddings
 
 def init_datasource():
@@ -55,7 +51,7 @@ def init_datasource():
     # Previously created index
     index_name = "mrag-fin-docs"
     #index = pinecone.Index(index_name)
-    return index_name
+    return pinecone
 
 class MyHandler(FileSystemEventHandler):
     def on_created(self, event):
@@ -71,13 +67,20 @@ class MyHandler(FileSystemEventHandler):
         strip_whitespace=strip_whitespace,
         add_start_index = True,))
         
-        index_name = init_datasource()
-        
-        embeddings = load_embedding_model()
-        
-        docsearch = Pinecone.add_texts([d.page_content for d in data], embeddings.embed_query, index_name=index_name)
+        pinecone = init_datasource()
+        embeddings = load_embedding_model()        
 
-def watch_directory(directory, index):
+        index_name = "mrag-fin-docs"
+        index = pinecone.Index(index_name)
+        text_field = "text"
+        # switch back to normal index for langchain
+        vectorstore = Pinecone(
+            index, embeddings, text_field # Using embedded data from Domino AI Gateway Endpoint
+        )
+        
+        docsearch = vectorstore.add_texts([d.page_content for d in data])
+
+def watch_directory(directory):
     event_handler = MyHandler()
     observer = Observer()
     observer.schedule(event_handler, directory, recursive=False)
