@@ -58,7 +58,7 @@ class MyHandler(FileSystemEventHandler):
         if event.is_directory:
             return
         filepath = event.src_path
-        print(f"File {filepath} has been added.")
+      
         # Load an entire folder
         loader = PyPDFLoader(filepath)
         data = loader.load_and_split(RecursiveCharacterTextSplitter(
@@ -77,9 +77,10 @@ class MyHandler(FileSystemEventHandler):
         vectorstore = Pinecone(
             index, embeddings, text_field # Using embedded data from Domino AI Gateway Endpoint
         )
-        
+          
         docsearch = vectorstore.add_texts([d.page_content for d in data])
-
+        print(f"File {filepath} has been added.")
+        
 def watch_directory(directory):
     event_handler = MyHandler()
     observer = Observer()

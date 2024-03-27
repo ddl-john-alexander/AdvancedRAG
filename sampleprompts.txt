@@ -1,0 +1,4 @@
+What was the gross income amount and percentage as share of total revenues in FY23
+What was the trend in sales for the Americas and US from FY21 to FY23?
+Report and analyze the trend in sales for the Americas and US from FY22 and FY23. Please include a markdown table of all relevant figures and percentages
+Report and analyze the geographic business segments performance for FY22-23 in a numbered list and rank each
