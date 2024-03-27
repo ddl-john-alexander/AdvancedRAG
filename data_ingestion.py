@@ -94,5 +94,5 @@ def watch_directory(directory):
     observer.join()
 
 if __name__ == "__main__":
-    directory_to_watch = "/mnt/code/data/"
+    directory_to_watch = "/mnt/data/AdvancedRAG/"
     watch_directory(directory_to_watch)
